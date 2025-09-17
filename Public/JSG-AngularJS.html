@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
+
+    <title>Document</title>
+    <script>
+
+       var mymodule= angular.module("kuchModule",[]);
+      
+      mymodule.controller("kuchController",function($scope)
+      {
+        $scope.fn="Real Java";
+        $scope.ln="Online";
+
+            $scope.doJoin=function()
+                {
+                    $scope.full=$scope.fn+" "+$scope.ln;
+                }
+         //-----------------------
+         $scope.months=["Jan","Feb","March","April"];
+         $scope.selMonth="none";
+
+         $scope.showSelMonth=function()
+         {
+              alert($scope.selMonth);
+         }
+         //==================================================
+
+           $scope.jsonAry=[
+                {"emailid":"bcebti@gmail.com",pwd:"432125",mobile:"345678999"},
+            {"emailid":"bcebti@gmail.com",pwd:"Admin123",mobile:"112111"},
+            {"emailid":"asscebti@gmail.com",pwd:"432125",mobile:"555555"},
+            {"emailid":"ggggebti@gmail.com",pwd:"432125",mobile:"9899898"},
+            ]
+
+
+       })
+
+    </script>
+</head>
+<body ng-app="kuchModule" ng-controller="kuchController">
+
+    <center>
+    <p>
+        F.Nmae: <input type="text" ng-model="fn"> {{fn}}
+    </p>
+    <p>
+        L.Nmae: <input type="text" ng-model="ln"> {{ln}}
+    </p>
+    <p>
+        <center>
+            <input type="button" value="Join" ng-click="doJoin();">
+        </center>
+    </p>
+    <p>
+        <input type="text" ng-model="full">
+    </p>
+    <hr><hr>
+    <p>
+        Months: 
+        <select ng-change="showSelMonth()" ng-model="selMonth">
+            <option value="none">select</option>
+            <option ng-repeat="str in months" value={{str}} >
+                {{str}}
+            </option>
+        </select>
+
+        <select>
+            <option ng-repeat="val in [].constructor(31) track by $index" value="{{$index+1}}">{{$index+1}}</option>
+        </select>
+    </p>
+    <hr>
+    <h2>All Records</h2>
+    <table width="800" border="1" rules="all">
+            <tr>
+                <th>Sr.No</th> <th>Emailid</th>  <th>Password</th>     <th>Mobie</th>       <th>Operations</th>
+            </tr>
+            <tr ng-repeat="obj in jsonAry">
+                <td>{{$index+1}}</td>
+                <td>
+                    {{obj.emailid}}
+                </td>
+                <td>
+                     {{obj.pwd}}
+                </td>
+                <td>
+                     {{obj.mobile}}
+                </td>
+                <td>
+                     <input type="button" value="Details">
+                </td>
+            </tr>
+    </table>
+
+    </center>
+</body>
+</html>
