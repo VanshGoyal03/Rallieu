@@ -12,7 +12,11 @@ app.listen(2001, function () {
     console.log("Server Stared at Port 2001")
 })
 
-app.use(express.urlencoded(true)); //convert POST data to JSON object
+require('dotenv').config(); // Loads the .env file
+
+// app.use(express.urlencoded(true)); //convert POST data to JSON object
+app.use(express.urlencoded({ extended: true })); //convert POST data to JSON object this is better than above one as it can handle nested objects also. 
+// extended:true means it can handle nested objects also and false means it cannot handle nested objects
 
 app.get("/", function (req, resp) {
     console.log(__dirname);
@@ -22,13 +26,15 @@ app.get("/", function (req, resp) {
     resp.sendFile(path);
 })
 
+// Cloudinary Configuration
 cloudinary.config({
-    cloud_name: 'dycnarj6f',
-    api_key: '943157478694741',
-    api_secret: 'd9V33r5dicfv0H0NYiGyLWHgseQ' // Click 'View API Keys' above to copy your API secret
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-let dbConfig = "mysql://avnadmin:AVNS_x6kTO_weSFx7chU9E_m@mysql-3bc139e6-vanshgoyal-03.i.aivencloud.com:22465/defaultdb";
+// Database Configuration
+let dbConfig = process.env.AIVEN_DB_URL;
 
 let mySqlVen = mysql2.createConnection(dbConfig);
 mySqlVen.connect(function (errKuch) {
@@ -39,11 +45,11 @@ mySqlVen.connect(function (errKuch) {
         console.log(errKuch.message);
 })
 
-app.get("/server-signup", function (req, resp) {  //Post Data go to body
-
-    let emailid = req.query.txtEmail;
-    let pwd = req.query.txtPwd;
-    let usertype = req.query.txtUser;
+app.post("/server-signup", function (req, resp) {  //Post Data go to body
+    // req.body is used for POST requests and req.query is used for GET requests
+    let emailid = req.body.txtEmail;
+    let pwd = req.body.txtPwd;
+    let usertype = req.body.txtUser;
 
     mySqlVen.query("insert into sports2025 values(?,?,?,1,current_date())", [emailid, pwd, usertype], function (errKuch) {
         if (errKuch == null)
@@ -55,9 +61,10 @@ app.get("/server-signup", function (req, resp) {  //Post Data go to body
 })
 
 //--------------------------------------------------------
-app.get("/server-login", function (req, resp) {
-    let emailid = req.query.txtEmail2;
-    let pwd = req.query.txtPwd2;
+app.post("/server-login", function (req, resp) { //Post Data go to body
+    // req.body is used for POST requests and req.query is used for GET requests
+    let emailid = req.body.txtEmail2;
+    let pwd = req.body.txtPwd2;
 
     let query = "select * from sports2025 where emailid=? and pwd=?";
 
@@ -354,12 +361,12 @@ app.get("/fetch-all-sports", function (req, resp) {
     // console.log("sports");
 })
 
-app.get("/sports", function (req, resp) {
+/* app.get("/sports", function (req, resp) {
     console.log(__dirname);
     console.log(__filename);
     let path = __dirname + "/Public/User-Console.html";
     resp.sendFile(path);
-})
+}) */   
 app.get("/Block-one", function (req, resp) {
     console.log(req.query)
     let emailid = req.query.emailidKuch;;;;;

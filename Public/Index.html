@@ -21,7 +21,7 @@
             $("#sbtn").click(function () {
                 // alert();
                 let obj = {
-                    type: "get",
+                    type: "post", // Changed to POST from GET for safety
                     url: "/server-signup",
                     data: {
                         txtEmail: $("#txtEmail").val(),
@@ -46,7 +46,7 @@
 
                 // alert();
                 let obj = {
-                    type: "get",
+                    type: "post", // Changed to POST from GET for safety
                     url: "/server-login",
                     data: {
                         txtEmail2: $("#txtEmail2").val(),
@@ -58,30 +58,32 @@
                 $.ajax(obj).then(
                     function (response) {
                         //alert("*"+ response + "*")
-                        if (response == " Blocked")
+                        // Use .trim() to be safe against accidental whitespace
+                        let res = response.trim();
+                        if (res == "Blocked")
                             alert("Sorry! Your Id is Blocked")
 
-                        else if (response == " Invalid credentials ")
+                        else if (res == "Invalid credentials")
                             alert("Invalid Email or Password")
 
                         else
-
-                            if (response == "Player") {
+                            // Success: Store user and redirect
+                            if (res == "Player") {
                                 localStorage.setItem("activeUser", txtEmail2);
 
                                 location.href = "Dash-Player.html";
                             }
 
 
-                            else if (response == "Organization") {
+                            else if (res == "Organization") {
                                 localStorage.setItem("activeUser", txtEmail2)
 
-                                location.href = "Dash-Organizer.html ";
+                                location.href = "Dash-Organizer.html";
                             }
-                            else if (response == "Admin") {
+                            else if (res == "Admin") {
                                 localStorage.setItem("activeUser", txtEmail2)
 
-                                location.href = "Dash-Admin.html "
+                                location.href = "Dash-Admin.html"
                             }
                     }).fail(function (err) { alert(err.message) })
             })
@@ -582,7 +584,7 @@
                 </div>
                 <div class="modal-body">
 
-                    <form enctype="multipart/form-data">
+                    <form> <!-- enctype="multipart/form-data" will be written in the form tag only if we need to upload files or images or Heavy data-->
                         <div class="mb-3">
                             <label for="exampleInputEmail1" class="form-label">Email address</label>
                             <input type="email" class="form-control" id="txtEmail" name="txtEmail"
@@ -631,7 +633,7 @@
                 </div>
                 <div class="modal-body">
 
-                    <form enctype="multipart/form-data">
+                    <form> <!-- enctype="multipart/form-data" will be written in the form tag only if we need to upload files or images or Heavy data-->
                         <div class="mb-3">
                             <label for="exampleInputEmail1" class="form-label">Email address</label>
                             <input type="email" class="form-control" id="txtEmail2" name="txtEmail2"
