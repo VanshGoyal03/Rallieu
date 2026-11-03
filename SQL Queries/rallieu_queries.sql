@@ -68,3 +68,9 @@ CREATE TABLE playerprofile (
 );
 
 SELECT * FROM playerprofile;
+
+ALTER TABLE playerprofile
+ADD COLUMN aadhar_name VARCHAR(150) NULL,
+ADD COLUMN aadhar_dob DATE NULL,
+ADD COLUMN aadhar_gender VARCHAR(20) NULL,
+ADD COLUMN aadhar_no VARCHAR(20) NULL;
