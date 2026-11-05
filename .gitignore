@@ -1,2 +1,8 @@
 node_modules/
 .env
+
+# Uploaded files
+Public/Uploads/
+
+# Gemini testing page
+Public/test-gemini.html
