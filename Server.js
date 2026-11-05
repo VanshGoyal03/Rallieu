@@ -2,6 +2,9 @@ var express = require("express"); //ctrl C \
 var mysql2 = require("mysql2");
 var fileuploader = require("express-fileupload");
 const { error } = require("console");
+const { type } = require("os");
+const { required } = require("nodemon/lib/config");
+// const { GoogleGenAI } = require("@google/genai");
 var cloudinary = require("cloudinary").v2;
 
 var app = express();//app() returns an Object:app
@@ -17,6 +20,14 @@ require('dotenv').config(); // Loads the .env file
 // app.use(express.urlencoded(true)); //convert POST data to JSON object
 app.use(express.urlencoded({ extended: true })); //convert POST data to JSON object this is better than above one as it can handle nested objects also. 
 // extended:true means it can handle nested objects also and false means it cannot handle nested objects
+
+const googleClientPromise = import("@google/genai")
+    .then(({ GoogleGenAI }) => {
+        return new GoogleGenAI({
+            apiKey: process.env.GEMINI_API_KEY
+        });
+    });
+console.log("Gemini API Key Loaded:", !!process.env.GEMINI_API_KEY);
 
 app.get("/", function (req, resp) {
     console.log(__dirname);
@@ -43,6 +54,86 @@ mySqlVen.connect(function (errKuch) {
         console.log("AiVen Connected Successfulllyyy!!!!");
     else
         console.log(errKuch.message);
+})
+
+app.get("/test-gemini", async function (req, resp) {
+    try {
+        const ai = await googleClientPromise;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-3.5-flash-lite",
+            contents: "Reply with exactly : Gemini Connected"
+        });
+
+        resp.send(response.text);
+    }
+    catch (err) {
+        console.error("Gemini Error:", err);
+        resp.status(500).send(err.message);
+    }
+});
+
+app.post("/test-gemini-image", async function (req, resp) {
+    try {
+        const ai = await googleClientPromise;
+
+        const image = req.files.testImage;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-3.5-flash-lite",
+            contents: [
+                {
+                    inlineData: {
+                        mimeType: image.mimetype,
+                        data: image.data.toString("base64")
+                    }
+                },
+                {
+                    text: `Extract the following details from the aadhar card : 
+                    1. Name
+                    2. Date of Birth
+                    3. Gender
+                    4. Aadhar Number 
+
+                    IMPORTANT LANGUAGE INSTRUCTIONS:
+                    - The Aadhaar card contains information in 2 languages English and other language.
+                    - Extract ONLY the English text printed on the Aadhaar card.
+                    - Do not translate English fields into other language.
+                    - For gender, return only "Male", "Female", or "Other".
+                    - Return the date of birth in DD/MM/YYYY format.
+                    - Return the Aadhaar number using English digits (0-9) only.
+                    
+                    if a field is missing or unreadable , return null.
+                    Do not guess any value`
+                }
+            ],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        aadhar_name: { type: "STRING", nullable: true },
+                        aadhar_dob: { type: "STRING", nullable: true },
+                        aadhar_gender: { type: "STRING", nullable: true },
+                        aadhar_no: { type: "STRING", nullable: true }
+                    },
+                    required: [
+                        "aadhar_name",
+                        "aadhar_dob",
+                        "aadhar_gender",
+                        "aadhar_no"
+                    ]
+                }
+            }
+
+        });
+        resp.send(response.text);
+    }
+
+    catch (err) {
+        console.error("Gemini Image Error:", err)
+        resp.status(500).send(err.message);
+    }
 })
 
 app.post("/server-signup", function (req, resp) {  //Post Data go to body
@@ -212,31 +303,87 @@ app.get("/org-events", function (req, resp) {
 
 //-----------------------------------------------------------------
 app.post("/server-player", async function (req, resp) {
+    //console.log("req.files:", req.files);
+    if (!req.files || !req.files.AdhaarPic || !req.files.ProfilePic) {
+        return resp.status(400).send("Both Aadhar Pic and Profile Pic are required.");
+    }
+    //console.log("Both images received successfully!");
+    let extractedData = {
+        aadhar_name: null,
+        aadhar_dob: null,
+        aadhar_gender: null,
+        aadhar_no: null
+    };
 
     let picurl1 = "";
-    if (req.files != null) {
+    if (req.files && req.files.AdhaarPic) {
         let fName = req.files.AdhaarPic.name;
+        const image = req.files.AdhaarPic;
         let fullPath = __dirname + "/Public/Uploads/" + fName;
-        req.files.AdhaarPic.mv(fullPath);
+        await req.files.AdhaarPic.mv(fullPath);
 
-        await cloudinary.uploader.upload(fullPath).then(function (picUrlResult) {
-            picurl1 = picUrlResult.url;  //will give u the url of ur pic on cloudinary server
-            console.log(picurl1);
+        const ai = await googleClientPromise;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-3.5-flash-lite",
+            contents: [
+                {
+                    inlineData: {
+                        mimeType: image.mimetype,
+                        data: image.data.toString("base64")
+                    }
+                },
+                {
+                    text: `Extract the following details from the Aadhaar card:
+                            Name, Date of Birth, Gender, Aadhaar Number.
+
+                            Extract only English text.
+                            Return DOB in YYYY-MM-DD format.
+                            Return gender as Male, Female, or Other.
+                            If missing or unreadable, return null.
+                            Never guess.`
+                }
+            ],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        aadhar_name: { type: "STRING", nullable: true },
+                        aadhar_dob: { type: "STRING", nullable: true },
+                        aadhar_gender: { type: "STRING", nullable: true },
+                        aadhar_no: { type: "STRING", nullable: true }
+                    },
+                    required: [
+                        "aadhar_name",
+                        "aadhar_dob",
+                        "aadhar_gender",
+                        "aadhar_no"
+                    ]
+                }
+            }
         });
+        extractedData = JSON.parse(response.text);
+
+        console.log(extractedData);
+
+        const picUrlResult = await cloudinary.uploader.upload(fullPath);
+        picurl1 = picUrlResult.url;  //will give u the url of ur pic on cloudinary server
+        console.log(picurl1);
+
     }
     else
         picurl1 = "nopic.jpg";
 
     let picurl2 = "";
-    if (req.files != null) {
+    if (req.files && req.files.ProfilePic) {
         let fName = req.files.ProfilePic.name;
         let fullPath = __dirname + "/Public/Uploads/" + fName;
-        req.files.ProfilePic.mv(fullPath);
+        await req.files.ProfilePic.mv(fullPath);
 
-        await cloudinary.uploader.upload(fullPath).then(function (picUrlResult) {
-            picurl2 = picUrlResult.url;  //will give u the url of ur pic on cloudinary server
-            console.log(picurl2);
-        });
+        const picUrlResult = await cloudinary.uploader.upload(fullPath);
+        picurl2 = picUrlResult.url;  //will give u the url of ur pic on cloudinary server
+        console.log(picurl2);
     }
     else
         picurl2 = "nopic.jpg";
@@ -252,7 +399,7 @@ app.post("/server-player", async function (req, resp) {
     let about = req.body.txtAorg;
 
 
-    mySqlVen.query("insert into playerprofile values(?,?,?,?,?,?,?,?,?,?)", [emailid, picurl1, picurl2, address, city, state, zip, sports, number, about], function (errKuch) {
+    mySqlVen.query("insert into playerprofile (emailid,picurl1,picurl2,address,city,state,zip,sports,number,about,aadhar_name,aadhar_dob,aadhar_gender,aadhar_no) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [emailid, picurl1, picurl2, address, city, state, zip, sports, number, about, extractedData.aadhar_name, extractedData.aadhar_dob, extractedData.aadhar_gender, extractedData.aadhar_no], function (errKuch) {
         if (errKuch == null)
             resp.send("Record Saved Successfulllyyy....Badhai!!!");
         else
@@ -366,7 +513,7 @@ app.get("/fetch-all-sports", function (req, resp) {
     console.log(__filename);
     let path = __dirname + "/Public/User-Console.html";
     resp.sendFile(path);
-}) */   
+}) */
 app.get("/Block-one", function (req, resp) {
     console.log(req.query)
     let emailid = req.query.emailidKuch;;;;;
