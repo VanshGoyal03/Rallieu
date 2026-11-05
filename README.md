@@ -282,9 +282,22 @@ For local development, configure the database and service environment variables,
 
 ## Deployment
 
-No deployment manifest, container configuration, CI workflow, or production hosting configuration is present in the tracked repository. A deployment needs a Node.js runtime, reachable MySQL-compatible database, the environment variables above, and configured Gemini and Cloudinary access for those features.
+### Render deployment status
 
-The server binds to port `2001` directly rather than reading a hosting platform's port variable. The npm start script's lowercase `server.js` path also needs correction for case-sensitive deployment filesystems. These settings should be addressed before deployment; no live deployment URL is defined in the repository.
+The tracked repository contains no `render.yaml`, Render-specific configuration, deployment workflow, or production URL. Therefore, a Render deployment is not verifiable from the repository, and no live URL is documented here.
+
+To configure a Render **Web Service** for this Node.js backend after addressing the deployment blockers below:
+
+1. Connect the GitHub repository to Render and create a Web Service using the Node runtime.
+2. Set the build command to `npm ci`.
+3. Use `node Server.js` as the start command. The package's `npm start` script currently runs `node server.js`; that lowercase path does not match the tracked `Server.js` filename on Render's case-sensitive Linux filesystem.
+4. Configure the environment variables listed in [Environment Variables](#environment-variables) in the service's Render dashboard under **Environment**. Set `AIVEN_DB_URL`, `GEMINI_API_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` there as appropriate for the deployed features. Use the dashboard's secret-value controls for credentials; do not commit them, put them in frontend code, or paste them into this README.
+5. Apply/save the environment changes and redeploy the service if Render does not start a deployment automatically. Environment variables in a developer's local `.env` file are local to that machine and are **not** automatically copied to Render. Configure secrets separately for every Render service/environment that needs them.
+6. Initialize the database separately by running `SQL Queries/rallieu_queries.sql` against the configured database, following the [database setup instructions](#configure-the-database).
+
+**The current server is not Render-ready without code changes.** `Server.js` listens on the fixed port `2001` instead of Render's assigned `PORT`, so the service may not become reachable through Render until the server is changed to listen on the platform-provided port. The start command above handles the filename case only; it does not resolve the hard-coded port. The server also has the login and password-change SQL placeholders described elsewhere in this README.
+
+Before deploying, ensure the database and external services are reachable from Render. No deployment command, deployment result, or actual production URL is present in the repository, so these steps describe the Render dashboard configuration needed rather than an existing deployed instance.
 
 ## Security Considerations
 
